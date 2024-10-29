@@ -2,8 +2,9 @@ import numpy as np
 from abc import ABC, abstractmethod
 from Parameters import Parameters
 from Entity import Entity
-from Evaluator import evaluate
+from problem import problem1
 import random
+import copy
 
 
 class Solver(ABC):
@@ -26,12 +27,11 @@ class Solver(ABC):
 
 class Genetic_Algorithm(Solver):
 
-    def __init__(self, parameters: Parameters, evaluator):
+    def __init__(self, parameters: Parameters):
         self.parameters = parameters
-        self.evaluator = evaluator
 
     def single_point_crossing(self, entity1, entity2):
-        # starting from 1, because corssing that starts with first element does not make sense ??????
+        # @TODO starting from 1, because corssing that starts with first element does not make sense ??????
         crossing_idx = random.randint(1, len(entity1.genome) - 1)
 
         genome1 = entity1.genome
@@ -46,16 +46,32 @@ class Genetic_Algorithm(Solver):
         )
 
     def selection(self, population):
+        # roulete selection
+        # @TODO tak jest git ?
         sum_of_population_values = sum([x.value for x in population])
 
+        new_population = np.array()
         for entity in population:
-            probability_of_selection = entity.value / sum_of_population_values
+            probability_of_selection = (
+                entity.value / sum_of_population_values
+            )  # value in range from 0 to 1
+            if probability_of_selection > random.random():
+                new_population.append(entity)
 
-        # selekcja ruletkowa
+        while len(new_population) != len(population):
+            entity = np.random.choice(population)
+            if probability_of_selection > random.random():
+                new_population.append(entity)
 
-    def crossover(self, population):
+        return new_population
+
+        # @TODO FIX - new_population powinno byc zwracane, dupa
+        # to samo jest w crossover, tylko robimy kopie
+        # rozwiązanie kopiujemy population gidzes, czyscimy population i jedzeimy
+
+    def crossover(self, population, problem):
         # single-point-crossing
-        entities_to_cross = copy(population)
+        entities_to_cross = copy.copy(population)
         population.clear()
         while len(entities_to_cross) >= 1:
             entity1, entity2 = np.random.choice(
@@ -63,8 +79,14 @@ class Genetic_Algorithm(Solver):
             )  # we do not want to cross the same entity with itself
             if self.parameters.probability_of_crossover > random.random():
                 single_point_crossing(entity1, entity2)
+                entity1.value = problem.evaluate(entity1.genome)
+                entity2.value = problem.evaluate(entity2.genome)
             population.add(entity1)
             population.add(entity2)
+            entities_to_cross.remove(entity1)
+            entities_to_cross.remove(entity2)
+
+        # @TODO fix - population size would decrease here, we need to add last element if left
 
     def mutate(self, population):
 
@@ -79,30 +101,51 @@ class Genetic_Algorithm(Solver):
     def get_parameters(self):
         return self.parameters
 
-    def solve(self, problem, initial_solutions):
+    def get_missing_population_members(self, population, problem, wanted_size):
+        members_to_add = []
+        while len(population) + len(members_to_add) < wanted_size:
+            entity_value = np.random.choice([True, False], size=problem.dimension)
+            members_to_add.append(Entity(entity_value, problem.evaluate(entity_value)))
+        return np.array(members_to_add)
+
+    def solve(self, problem, initial_solutions=None):
+        if initial_solutions is None:
+            initial_solutions = np.array([], dtype=bool)
+        if len(initial_solutions) != self.parameters.population_size:
+            initial_solutions = np.concatenate(
+                initial_solutions,
+                self.get_missing_population_members(
+                    initial_solutions, problem, self.parameters.population_size
+                ),
+            )
+
         # should we copy population ??
         population = initial_solutions
 
-        result = find_the_best_entity(population)
+        result = self.find_the_best_entity(population)
 
         for i in range(self.parameters.number_of_generations):
-            selection(population)
-            crossover(population)
-            mutate(population)
+            S = self.selection(population)
+            self.crossover(S, problem)
+            self.mutate(S, problem)
 
             # find the best
-            best_of_population = find_the_best_entity(population)
+            best_of_population = self.find_the_best_entity(population)
             if result < best_of_population:
                 result = best_of_population
 
             # succession
+            population = S
 
 
 def main():
+    print("start..")
 
-    pm = Parameters(1000, 0.1, 0.1)
-    gm = Genetic_Algorithm(pm, evaluator=evaluate)
+    pm = Parameters(10, 0.1, 0.1, 10)
+    gm = Genetic_Algorithm(pm)
+    gm.solve(problem1)
 
+    print("finished")
     # pop = np.array(
     #     [
     #         Entity(np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]), 1),
