@@ -50,7 +50,7 @@ class Genetic_Algorithm(Solver):
         # @TODO tak jest git ?
         sum_of_population_values = sum([x.value for x in population])
 
-        new_population = np.array()
+        new_population = []
         for entity in population:
             probability_of_selection = (
                 entity.value / sum_of_population_values
@@ -63,30 +63,29 @@ class Genetic_Algorithm(Solver):
             if probability_of_selection > random.random():
                 new_population.append(entity)
 
-        return new_population
-
-        # @TODO FIX - new_population powinno byc zwracane, dupa
-        # to samo jest w crossover, tylko robimy kopie
-        # rozwiązanie kopiujemy population gidzes, czyscimy population i jedzeimy
+        return np.array(new_population)
 
     def crossover(self, population, problem):
         # single-point-crossing
-        entities_to_cross = copy.copy(population)
-        population.clear()
+        entities_to_cross = population.tolist()
+        population = []
         while len(entities_to_cross) >= 1:
             entity1, entity2 = np.random.choice(
                 entities_to_cross, size=2, replace=False
             )  # we do not want to cross the same entity with itself
             if self.parameters.probability_of_crossover > random.random():
-                single_point_crossing(entity1, entity2)
+                self.single_point_crossing(entity1, entity2)
                 entity1.value = problem.evaluate(entity1.genome)
                 entity2.value = problem.evaluate(entity2.genome)
-            population.add(entity1)
-            population.add(entity2)
+            population.append(entity1)
+            population.append(entity2)
             entities_to_cross.remove(entity1)
             entities_to_cross.remove(entity2)
 
-        # @TODO fix - population size would decrease here, we need to add last element if left
+        if len(entities_to_cross) == 1:
+            population.append(entities_to_cross[0])
+
+        return np.array(population)
 
     def mutate(self, population):
 
@@ -111,12 +110,15 @@ class Genetic_Algorithm(Solver):
     def solve(self, problem, initial_solutions=None):
         if initial_solutions is None:
             initial_solutions = np.array([], dtype=bool)
+
         if len(initial_solutions) != self.parameters.population_size:
             initial_solutions = np.concatenate(
-                initial_solutions,
-                self.get_missing_population_members(
-                    initial_solutions, problem, self.parameters.population_size
-                ),
+                (
+                    initial_solutions,
+                    self.get_missing_population_members(
+                        initial_solutions, problem, self.parameters.population_size
+                    ),
+                )
             )
 
         # should we copy population ??
@@ -126,8 +128,8 @@ class Genetic_Algorithm(Solver):
 
         for i in range(self.parameters.number_of_generations):
             S = self.selection(population)
-            self.crossover(S, problem)
-            self.mutate(S, problem)
+            C = self.crossover(S, problem)
+            self.mutate(C)
 
             # find the best
             best_of_population = self.find_the_best_entity(population)
@@ -135,15 +137,22 @@ class Genetic_Algorithm(Solver):
                 result = best_of_population
 
             # succession
-            population = S
+            population = C
+
+        result = self.find_the_best_entity(population)
+        return (result, problem.evaluate(result.genome))
 
 
 def main():
     print("start..")
 
-    pm = Parameters(10, 0.1, 0.1, 10)
+    pm = Parameters(1000, 0.001, 0.01, 100)
     gm = Genetic_Algorithm(pm)
-    gm.solve(problem1)
+    found_value, score = gm.solve(problem1)
+    print(score)
+
+    # zapytac o co chodzi z wartoscami ujemnym prawdopodobienstwa z prezentacji !!!!!!!
+    # w zasadzie pewnie wszystkie wartosci sa ujeme, czyli jest git ??
 
     print("finished")
     # pop = np.array(
