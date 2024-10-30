@@ -188,26 +188,37 @@ class Genetic_Algorithm(Solver):
 def main():
     print("start..")
 
-    pm = Parameters(10000, 0.75, 0.01, 100)
-    gm = Genetic_Algorithm(pm)
-    found_value, score = gm.solve(problem1)
-    print(score)
+    # pm = Parameters(1000, 0.8, 0.02, 100)
+    # gm = Genetic_Algorithm(pm)
+    # found_value, score = gm.solve(problem1)
+    # print(found_value, score)
 
-    # zapytac o co chodzi z wartoscami ujemnym prawdopodobienstwa z prezentacji !!!!!!!
-    # w zasadzie pewnie wszystkie wartosci sa ujeme, czyli jest git ??
+    gm = Genetic_Algorithm(Parameters(1000, 0.8, 0.02, 100))
+    for number_of_iterations in {100, 500, 1000}:
+        for probability_of_cross in np.arange(0.1, 0.5, 0.1):
+            for probability_of_mutation in {0.005, 0.01, 0.02, 0.05, 0.1}:
+                for size_of_population in {50, 100, 500, 1000, 5000}:
+                    sum_of_scores = 0
+                    for _ in range(10):
+                        gm.parameters = Parameters(
+                            number_of_iterations,
+                            probability_of_cross,
+                            probability_of_mutation,
+                            size_of_population,
+                        )
+                        found_value, score = gm.solve(problem1)
+                        sum_of_scores += score
 
+                    avg_score = sum_of_scores / 10
+
+                    print(
+                        number_of_iterations,
+                        probability_of_cross,
+                        probability_of_mutation,
+                        size_of_population,
+                        avg_score,
+                    )
     print("finished")
-    # pop = np.array(
-    #     [
-    #         Entity(np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]), 1),
-    #         Entity(np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), 1),
-    #         Entity(np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]), 1),
-    #         Entity(np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]), 1),
-    #     ]
-    # )
-
-    # result = gm.single_point_crossing(pop[0], pop[1])
-    # print("a")
 
 
 main()
