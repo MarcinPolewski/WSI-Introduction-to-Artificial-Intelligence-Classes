@@ -87,12 +87,13 @@ class Genetic_Algorithm(Solver):
 
         return np.array(population)
 
-    def mutate(self, population):
+    def mutate(self, population, problem):
 
         for entity in population:
             for i in range(len(entity.genome)):
                 if self.parameters.probability_of_mutation > random.random():
                     entity.genome[i] = not entity.genome[i]
+                    entity.value = problem.evaluate(entity.genome)
 
     def find_the_best_entity(self, population):
         return np.max(population)
@@ -124,29 +125,31 @@ class Genetic_Algorithm(Solver):
         # should we copy population ??
         population = initial_solutions
 
-        result = self.find_the_best_entity(population)
+        result = copy.copy(self.find_the_best_entity(population))
 
         for i in range(self.parameters.number_of_generations):
             S = self.selection(population)
             C = self.crossover(S, problem)
-            self.mutate(C)
+            self.mutate(C, problem)
 
             # find the best
             best_of_population = self.find_the_best_entity(population)
+            print(problem.evaluate(best_of_population.genome))
+
             if result < best_of_population:
-                result = best_of_population
+                result = copy.copy(best_of_population)
+                print("better found^")
 
             # succession
             population = C
 
-        result = self.find_the_best_entity(population)
-        return (result, problem.evaluate(result.genome))
+        return (result, result.value)
 
 
 def main():
     print("start..")
 
-    pm = Parameters(1000, 0.001, 0.01, 100)
+    pm = Parameters(1000, 0.75, 0.01, 100)
     gm = Genetic_Algorithm(pm)
     found_value, score = gm.solve(problem1)
     print(score)
