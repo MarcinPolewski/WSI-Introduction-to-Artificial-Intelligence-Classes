@@ -40,12 +40,19 @@ class Genetic_Algorithm(Solver):
     def selection(self, population, scores):
         # roulete selection
 
-        sum_of_population_values = np.sum(scores)
+        scores_amplitude = scores.max() - scores.min()
+        rescaled_scores = np.ndarray((len(scores)))
+        if scores_amplitude == 0:
+            print("todo - handle this situation")
+        else:
+            rescaled_scores = [(x - scores.min()) / scores_amplitude for x in scores]
+
         population_size = len(population)
         new_population = np.empty((len(population), len(population[0])), dtype=bool)
-        # new_population = np.empty((population_size), dtype=np.ndarray)
-        new_population_idx = 0
 
+        sum_of_rescaled_probabilities = sum(rescaled_scores)
+
+        new_population_idx = 0
         while new_population_idx != population_size:
             random_value = random.random()  # value from 0 to 1
             sum_of_prevoius_probabilities = 0
@@ -53,7 +60,9 @@ class Genetic_Algorithm(Solver):
             while (
                 sum_of_prevoius_probabilities < random_value and idx < population_size
             ):
-                sum_of_prevoius_probabilities += scores[idx] / sum_of_population_values
+                sum_of_prevoius_probabilities += (
+                    rescaled_scores[idx] / sum_of_rescaled_probabilities
+                )
                 idx += 1
 
             # now idx is the chosen value
@@ -77,11 +86,12 @@ class Genetic_Algorithm(Solver):
             if self.parameters.probability_of_crossover > random.random():
                 crossing_idx = random.randint(1, len(genome1) - 1)
                 # Perform crossover
+                temp_genome1 = copy.copy(genome1)
                 genome1 = np.concatenate(
                     (genome1[:crossing_idx], genome2[crossing_idx:])
                 )
                 genome2 = np.concatenate(
-                    (genome2[:crossing_idx], genome1[crossing_idx:])
+                    (genome2[:crossing_idx], temp_genome1[crossing_idx:])
                 )
 
             new_population[new_population_idx] = genome1
@@ -91,21 +101,6 @@ class Genetic_Algorithm(Solver):
 
             entities_to_cross.pop(max(idx1, idx2))  # Remove the higher index first
             entities_to_cross.pop(min(idx1, idx2))  # Remove the lower index
-
-            # entities_to_cross = [
-            #     x
-            #     for x in entities_to_cross
-            #     if (x is not population[idx1] and x is not population[idx2])
-            # ]
-            # print()
-
-            # entities_to_cross = list(
-            #     filter(
-            #         lambda x: (x is not population[idx1])
-            #         and (x is not population[idx2]),
-            #         entities_to_cross,
-            #     )  # @TODO FIX this - some times it only deletes one element
-            # )
 
         if len(entities_to_cross) == 1:
             new_population[new_population_idx] = entities_to_cross[0]
@@ -193,31 +188,33 @@ def main():
     # found_value, score = gm.solve(problem1)
     # print(found_value, score)
 
-    gm = Genetic_Algorithm(Parameters(1000, 0.8, 0.02, 100))
-    for number_of_iterations in {100, 500, 1000}:
-        for probability_of_cross in np.arange(0.1, 0.5, 0.1):
-            for probability_of_mutation in {0.005, 0.01, 0.02, 0.05, 0.1}:
-                for size_of_population in {50, 100, 500, 1000, 5000}:
-                    sum_of_scores = 0
-                    for _ in range(10):
-                        gm.parameters = Parameters(
-                            number_of_iterations,
-                            probability_of_cross,
-                            probability_of_mutation,
-                            size_of_population,
-                        )
-                        found_value, score = gm.solve(problem1)
-                        sum_of_scores += score
+    gm = Genetic_Algorithm(Parameters(200, 0.005, 0.9, 200))
+    found_value, score = gm.solve(problem1)
+    print(score)
+    # for number_of_iterations in {100, 500, 1000}:
+    #     for probability_of_cross in np.arange(0.1, 0.5, 0.1):
+    #         for probability_of_mutation in {0.005, 0.01, 0.02, 0.05, 0.1}:
+    #             for size_of_population in {50, 100, 500, 1000, 5000}:
+    #                 sum_of_scores = 0
+    #                 for _ in range(10):
+    #                     gm.parameters = Parameters(
+    #                         number_of_iterations,
+    #                         probability_of_cross,
+    #                         probability_of_mutation,
+    #                         size_of_population,
+    #                     )
+    #                     found_value, score = gm.solve(problem1)
+    #                     sum_of_scores += score
 
-                    avg_score = sum_of_scores / 10
+    #                 avg_score = sum_of_scores / 10
 
-                    print(
-                        number_of_iterations,
-                        probability_of_cross,
-                        probability_of_mutation,
-                        size_of_population,
-                        avg_score,
-                    )
+    #                 print(
+    #                     number_of_iterations,
+    #                     probability_of_cross,
+    #                     probability_of_mutation,
+    #                     size_of_population,
+    #                     avg_score,
+    #                 )
     print("finished")
 
 
