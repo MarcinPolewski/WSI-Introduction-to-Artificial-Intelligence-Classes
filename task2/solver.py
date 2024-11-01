@@ -43,7 +43,7 @@ class Genetic_Algorithm(Solver):
         scores_amplitude = scores.max() - scores.min()
         rescaled_scores = np.ndarray((len(scores)))
         if scores_amplitude == 0:
-            print("todo - handle this situation")
+            rescaled_scores = [1 / len(population) for _ in range(len(population))]
         else:
             rescaled_scores = [(x - scores.min()) / scores_amplitude for x in scores]
 
@@ -78,10 +78,10 @@ class Genetic_Algorithm(Solver):
         # new_population = np.empty((len(population)), dtype=np.ndarray)
         new_population_idx = 0
 
-        while len(entities_to_cross) >= 1:
+        while len(entities_to_cross) > 1:
             idx1, idx2 = random.sample(range(len(entities_to_cross)), 2)
-            genome1 = population[idx1]
-            genome2 = population[idx2]
+            genome1 = entities_to_cross[idx1]
+            genome2 = entities_to_cross[idx2]
 
             if self.parameters.probability_of_crossover > random.random():
                 crossing_idx = random.randint(1, len(genome1) - 1)
@@ -180,41 +180,47 @@ class Genetic_Algorithm(Solver):
         return (result, result_score)
 
 
+def perform_test(params, problem):
+    for _ in range(3):
+        gm = Genetic_Algorithm(params)
+        found_value, score = gm.solve(problem)
+
+        print(
+            "iteration:",
+            params.number_of_generations,
+            "probablility of cross:",
+            params.probability_of_crossover,
+            "probablility of mutation:",
+            params.probability_of_mutation,
+            "population size:",
+            params.population_size,
+            "result:",
+            score,
+        )
+
+    print()
+
+
 def main():
     print("start..")
 
-    # pm = Parameters(1000, 0.8, 0.02, 100)
-    # gm = Genetic_Algorithm(pm)
-    # found_value, score = gm.solve(problem1)
-    # print(found_value, score)
+    print("test ")
+    perform_test(Parameters(100, 0.0015, 0.8, 2), problem1)
 
-    gm = Genetic_Algorithm(Parameters(200, 0.005, 0.9, 200))
-    found_value, score = gm.solve(problem1)
-    print(score)
-    # for number_of_iterations in {100, 500, 1000}:
-    #     for probability_of_cross in np.arange(0.1, 0.5, 0.1):
-    #         for probability_of_mutation in {0.005, 0.01, 0.02, 0.05, 0.1}:
-    #             for size_of_population in {50, 100, 500, 1000, 5000}:
-    #                 sum_of_scores = 0
-    #                 for _ in range(10):
-    #                     gm.parameters = Parameters(
+    # for number_of_iterations in {200, 500, 1000}:
+    #     for probability_of_cross in np.arange(0.1, 0.5, 0.9):
+    #         for probability_of_mutation in {0.005, 0.01, 0.015, 0.02, 0.05, 0.1}:
+    #             for size_of_population in {50, 100, 200, 300, 500, 1000, 5000}:
+    #                 perform_test(
+    #                     Parameters(
     #                         number_of_iterations,
     #                         probability_of_cross,
     #                         probability_of_mutation,
     #                         size_of_population,
-    #                     )
-    #                     found_value, score = gm.solve(problem1)
-    #                     sum_of_scores += score
-
-    #                 avg_score = sum_of_scores / 10
-
-    #                 print(
-    #                     number_of_iterations,
-    #                     probability_of_cross,
-    #                     probability_of_mutation,
-    #                     size_of_population,
-    #                     avg_score,
+    #                     ),
+    #                     problem1,
     #                 )
+
     print("finished")
 
 
