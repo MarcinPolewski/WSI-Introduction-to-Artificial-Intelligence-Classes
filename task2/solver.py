@@ -121,7 +121,7 @@ class Genetic_Algorithm(Solver):
             if scores[i] > scores[best_score_idx]:
                 best_score_idx = i
 
-        return population[i], scores[i]
+        return population[best_score_idx], scores[best_score_idx]
 
     def get_parameters(self):
         return self.parameters
@@ -180,32 +180,51 @@ class Genetic_Algorithm(Solver):
         return (result, result_score)
 
 
-def perform_test(params, problem):
+def perform_test(params, problem, k, r):
     for _ in range(3):
         gm = Genetic_Algorithm(params)
         found_value, score = gm.solve(problem)
 
         print(
-            "iteration:",
             params.number_of_generations,
-            "probablility of cross:",
+            "|",
             params.probability_of_crossover,
-            "probablility of mutation:",
+            "|",
             params.probability_of_mutation,
-            "population size:",
+            "|",
             params.population_size,
-            "result:",
+            "|",
             score,
+            "|",
+            k,
+            "|",
+            r,
+            sep="",
         )
-
-    print()
 
 
 def main():
     print("start..")
 
-    print("test ")
-    perform_test(Parameters(100, 0.0015, 0.8, 2), problem1)
+    # perform_test(Parameters(50, 0.0015, 0.7, 10), problem1)
+    # perform_test(Parameters(50, 0.0015, 0.7, 20), problem1)
+    # perform_test(Parameters(50, 0.0015, 0.7, 40), problem1)
+    # perform_test(Parameters(50, 0.0015, 0.7, 80), problem1)
+    # perform_test(Parameters(50, 0.0015, 0.7, 160), problem1)
+    # perform_test(Parameters(50, 0.0015, 0.7, 320), problem1)
+    # perform_test(Parameters(50, 0.0015, 0.7, 640), problem1)
+    # perform_test(Parameters(50, 0.0015, 0.7, 1280), problem1)
+
+    for k in {100, 500, 1000, 2000, 5000, 10000, 20000}:
+        for r in {0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 1, 2, 3, 5, 10, 20, 50, 100}:
+            iteration_count = (int)((k / r) ** 0.5)
+            population_size = (int)(k / ((k / r) ** 0.5))
+            perform_test(
+                Parameters(iteration_count, 0.0015, 0.7, population_size),
+                problem1,
+                k,
+                r,
+            )
 
     # for number_of_iterations in {200, 500, 1000}:
     #     for probability_of_cross in np.arange(0.1, 0.5, 0.9):
