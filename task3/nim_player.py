@@ -4,11 +4,32 @@ from two_player_games.games.nim import Nim, NimMove, NimState
 
 class NimPlayer(Player):
 
-    def __init__(self, depth):
+    def __init__(self, depth, max_player: bool):
         self.depth = depth
+        self.max_player = max_player
+
+    def heuristic(self, s: NimState, multiplier: int):
+        heaps = s.heaps
+        nim_sum = 0
+        for heap in heaps:
+            nim_sum ^= heap
+
+        if nim_sum == 0:
+            return 50 * multiplier
+        else:
+            return -50 * multiplier
 
     def evaluate(self, s: NimState):
-        return 0
+        multiplier = 1
+        if self.max_player:
+            multiplier = -1
+        if s.is_finished():
+            if s.get_winner() == self:
+                return multiplier * 100
+            else:
+                return multiplier * (-100)
+        else:
+            return self.heuristic(s, multiplier)
 
     def alphaBetaFinder(
         self, s: NimState, d: int, max_move: bool, alpha: int, beta: int
@@ -19,11 +40,11 @@ class NimPlayer(Player):
         moves = s.get_moves()
         bestMove = None
 
-        if max_move:
+        if self.max_player:
             maxScore = float("-inf")
             for move in moves:
                 _, subTreeScore = self.alphaBetaFinder(
-                    s.make_move(move), d - 1, not max_move, alpha, beta
+                    s.make_move(move), d - 1, False, alpha, beta
                 )
                 if subTreeScore > maxScore:
                     bestMove = move
@@ -36,7 +57,7 @@ class NimPlayer(Player):
             minScore = float("inf")
             for move in moves:
                 _, subTreeScore = self.alphaBetaFinder(
-                    s.make_move(move), d - 1, not max_move, alpha, beta
+                    s.make_move(move), d - 1, True, alpha, beta
                 )
                 if subTreeScore < minScore:
                     minScore = subTreeScore
@@ -48,6 +69,6 @@ class NimPlayer(Player):
 
     def get_best_move(self, s: NimState):
         bestMove, score = self.alphaBetaFinder(
-            s, self.depth, True, float("-inf"), float("+inf")
+            s, self.depth, self.max_player, float("-inf"), float("+inf")
         )
         return bestMove
