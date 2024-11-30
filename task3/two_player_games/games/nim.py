@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Iterable, Optional
 from two_player_games.game import Game
 from two_player_games.move import Move
 from two_player_games.player import Player
@@ -22,8 +22,10 @@ class Nim(Game):
 
         Parameters:
             size: the size of the game as number of columns and rows of boxes
-            first_player: the player that will go first (if None is passed, a player will be created)
-            second_player: the player that will go second (if None is passed, a player will be created)
+            first_player: the player that will go first
+                (if None is passed, a player will be created)
+            second_player: the player that will go second (
+                if None is passed, a player will be created)
         """
         self.first_player = first_player or Player(self.FIRST_PLAYER_DEFAULT_CHAR)
         self.second_player = second_player or Player(self.SECOND_PLAYER_DEFAULT_CHAR)

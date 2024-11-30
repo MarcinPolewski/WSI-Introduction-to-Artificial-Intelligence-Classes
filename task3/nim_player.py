@@ -1,74 +1,81 @@
 from two_player_games.player import Player
-from two_player_games.games.nim import Nim, NimMove, NimState
+from two_player_games.games.nim import NimMove, NimState
+from random import shuffle
 
 
 class NimPlayer(Player):
 
-    def __init__(self, depth, max_player: bool):
+    def __init__(self, depth):
         self.depth = depth
-        self.max_player = max_player
 
-    def heuristic(self, s: NimState, multiplier: int):
-        heaps = s.heaps
+    def heuristic(self, state: NimState, modifier: int):
+
         nim_sum = 0
-        for heap in heaps:
+        for heap in state.heaps:
             nim_sum ^= heap
 
-        if nim_sum == 0:
-            return 50 * multiplier
-        else:
-            return -50 * multiplier
+        # corner case 1 - on heap left
+        if sum(state.heaps) == 1:
+            return modifier * 4
 
-    def evaluate(self, s: NimState):
-        multiplier = 1
-        if self.max_player:
-            multiplier = -1
-        if s.is_finished():
-            if s.get_winner() == self:
-                return multiplier * 100
-            else:
-                return multiplier * (-100)
-        else:
-            return self.heuristic(s, multiplier)
+        # corner case 2 - heaps of size 1 left
+        if all(x <= 1 for x in state.heaps):
+            return modifier * (-1 if state.heaps.count(1) % 2 else 3)
+
+        # normal case - to be solved with nimsum
+        return modifier * (1 if nim_sum == 0 else -1)
+
+    def evaluate(self, s: NimState, is_max_player: bool):
+        multiplier = 1 if is_max_player else -1
+
+        return self.heuristic(s, multiplier)
+        # if s.is_finished():
+        #     if s.get_winner() == self:  # self is always a max player
+        #         return multiplier * 3
+        #     else:
+        #         return multiplier * (-3)
+        # else:
+        #     return self.heuristic(s, multiplier)
 
     def alphaBetaFinder(
         self, s: NimState, d: int, max_move: bool, alpha: int, beta: int
     ) -> tuple[NimMove, int]:
         if s.is_finished() or d == 0:
-            return None, self.evaluate(s)
+            return None, self.evaluate(s, max_move)
 
         moves = s.get_moves()
+        shuffle(moves)
         bestMove = None
 
-        if self.max_player:
+        if max_move:
             maxScore = float("-inf")
             for move in moves:
                 _, subTreeScore = self.alphaBetaFinder(
-                    s.make_move(move), d - 1, False, alpha, beta
+                    s.make_move(move), d - 1, not max_move, alpha, beta
                 )
                 if subTreeScore > maxScore:
                     bestMove = move
                     maxScore = subTreeScore
                 alpha = max(alpha, maxScore)
-                if alpha > beta:
-                    return bestMove, alpha
-            return bestMove, alpha
+                if maxScore >= beta:
+                    return bestMove, maxScore
+            return bestMove, maxScore
         else:
             minScore = float("inf")
             for move in moves:
                 _, subTreeScore = self.alphaBetaFinder(
-                    s.make_move(move), d - 1, True, alpha, beta
+                    s.make_move(move), d - 1, not max_move, alpha, beta
                 )
                 if subTreeScore < minScore:
                     minScore = subTreeScore
                     bestMove = move
                 beta = min(beta, minScore)
-                if alpha > beta:
-                    return bestMove, beta
-            return bestMove, beta
+                if alpha >= minScore:
+                    return bestMove, minScore
+            return bestMove, minScore
 
     def get_best_move(self, s: NimState):
         bestMove, score = self.alphaBetaFinder(
-            s, self.depth, self.max_player, float("-inf"), float("+inf")
+            s, self.depth, True, float("-inf"), float("+inf")
         )
         return bestMove
